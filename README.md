@@ -35,7 +35,7 @@ For the most part mainnet and testnet configs are the same, but there are some v
 | block              | block data |
 | <smart_contract_name>_<event_name>   | event data for a particular smart contract (e.g. assertion_assertion_created table stores assertion_created event data for Assertion smart contract)     |
 | <smart_contract>_tx           | transaction data for a particular smart contract (e.g. assertion_tx)      |
-| staging_*       | staging tables built for reporting purposes, updates every 30sec                 |
+| staging_*       | staging tables built for reporting purposes                 |
 | sync_status            | latest synced block and latest block for staging tables             |
 
 
