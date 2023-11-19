@@ -212,8 +212,8 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
     dict1 = camel_to_snake_dict_keys(dict1)
     
     
-    if rpc == "wss://parachain-testnet-rpc.origin-trail.network/" and table_name == "proof_manager_v1_u1_proof_submitted": #for testnet proof_manager_v1_u1_proof_submitted have an extra columns which does not exist on mainnet, so it needs to be kicked out
-        del dict1['state_index']  
+    #if rpc == "wss://parachain-testnet-rpc.origin-trail.network/" and table_name == "proof_manager_v1_u1_proof_submitted": #for testnet proof_manager_v1_u1_proof_submitted have an extra columns which does not exist on mainnet, so it needs to be kicked out
+    #    del dict1['state_index']  
         
     #pre-processing
     if table_name in tables_events: #changes applicable to all events table
