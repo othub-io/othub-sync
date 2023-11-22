@@ -1,7 +1,5 @@
 '''
 TODO:
-    1346220 in this block there is a tx which tries to create Hub contract and it failed. Hub created in 1310133. It failed with collision and i don't know how to get tx status wiothout using receipts. And receipt returns data for correct tx
-  
     in the beginning of the sync, while blocks are empty sync window 400 works fine
     later 150 works very well
     by block 2449078 even 100 blocks is too much
