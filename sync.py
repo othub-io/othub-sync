@@ -346,9 +346,13 @@ def db_fetch_last_sycned_block():
     else:
         return res[0]+1
 
+#by default this function returns a set of contact addresses applicable to a given block range
+#but if a new contract address is available, it does not mean the old one is not used at all
+#it's possible some nodes will use old contract for sometime even when a new one is available
+#so 1000 blocks is the buffer for that
 def db_fetch_contracts(start_block,cur_window):
     q = "call sp_list_contracts(%s,%s)"
-    v = (start_block,cur_window)
+    v = (start_block-5000,cur_window + 5000) 
     c.execute(q,v)
     res = c.fetchall()
     try:
