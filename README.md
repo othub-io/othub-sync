@@ -15,15 +15,15 @@ For the most part mainnet and testnet configs are the same, but there are some v
   
 **OTP mainnet specific values:**  
    "rpc":"wss://parachain-rpc.origin-trail.network",  
-   "sync_other_tx":true,
+   "sync_other_tx":true,  
    "chain_id":2043,  
    "hub_addr":"0x5fA7916c48Fe6D5F1738d12Ad234b78c90B4cAdA",  
    "v2_abi_block":2164677,  
    "start_block":1346270  
 
 **OTP testnet specific values:**  
-   "rpc":"wss://parachain-testnet-rpc.origin-trail.network/",
-   "sync_other_tx":true,
+   "rpc":"wss://parachain-testnet-rpc.origin-trail.network/",  
+   "sync_other_tx":true,  
    "chain_id":20430,  
    "hub_addr":"0xBbfF7Ea6b2Addc1f38A0798329e12C08f03750A6",  
    "v2_abi_block":1554800,  
