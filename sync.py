@@ -1,5 +1,7 @@
 '''
 TODO:
+    1346220 in this block there is a tx which tries to create Hub contract and it failed. Hub created in 1310133. It failed with collision and i don't know how to get tx status wiothout using receipts. And receipt returns data for correct tx
+  
     in the beginning of the sync, while blocks are empty sync window 400 works fine
     later 150 works very well
     by block 2449078 even 100 blocks is too much
@@ -164,8 +166,8 @@ def initialization():
     c.execute(q,v)
     res = c.fetchone()
     if res == None:
-        q = "insert into contracts (contract_address) values (%s)"
-        v = (hub_addr,)
+        q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
+        v = (1,hub_addr)
         db_run_tx(q,v)
         
     
@@ -227,13 +229,20 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
             del dict1['input']
             dict1['to_id']=contracts[dict1['to']].get('id')
             del dict1['to']
+        
+        if "public_key" in dict1:
+            del dict1["public_key"]
+        if "raw" in dict1:
+            del dict1["raw"]
+        if "standard_v" in dict1:
+            del dict1["standard_v"]
+        if "y_parity" in dict1:
+            del dict1["y_parity"]           
+            
         del dict1['block_hash']
         del dict1['nonce']
-        del dict1['public_key']
         del dict1['r']
-        del dict1['raw']
         del dict1['s']
-        del dict1['standard_v']
         del dict1['type']
         del dict1['v']
         del dict1['value']
@@ -303,10 +312,15 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
         del dict1['state_root']
         del dict1['total_difficulty']
         del dict1['transactions_root']
-
         
-    
-    
+        #these do not exist on OTP, but do on Gnosis Testnet at least
+        if "mix_hash" in dict1:
+            del dict1["mix_hash"]
+        if "withdrawals" in dict1:
+            del dict1["withdrawals"]
+        if "withdrawals_root" in dict1:
+            del dict1["withdrawals_root"]
+        
     column_names = list(dict1.keys())
             
     errors = 0
@@ -326,7 +340,7 @@ def db_write_dicts(dicts, table_name):
        
 
 def db_update_latest_synced_block(end_block):
-    print(" Last synced block - " + str(end_block))
+    print(" Last synced block - " + str(end_block) + " | RPC calls - " + str(rpc_calls))
     q = "update sync_status set block_num = %s where parameter='last_synced_block'"
     v = (end_block,)
     db_run_tx(q, v)
@@ -345,6 +359,7 @@ def db_fetch_last_sycned_block():
         return first_block_to_sync
     else:
         return res[0]+1
+
 
 #by default this function returns a set of contact addresses applicable to a given block range
 #but if a new contract address is available, it does not mean the old one is not used at all
@@ -393,6 +408,8 @@ def rpc_call(call):
         else:
             status = 'pass'
             retries = rpc_max_retries + 1
+            global rpc_calls 
+            rpc_calls = rpc_calls + 1
     return status, res
  
 def rpc_call_events(contr, event, start_block, end_block):
@@ -416,6 +433,8 @@ def rpc_call_events(contr, event, start_block, end_block):
             filter_id = e_filter.filter_id
             w3.eth.uninstall_filter(filter_id)
             retries = rpc_max_retries + 1
+            global rpc_calls 
+            rpc_calls = rpc_calls + 1
     return status, res   
     
 
@@ -556,6 +575,7 @@ def sync_events(contract_name,contract_address, start_block, end_block, abi_v):
                 print("\t" +contract_name+ ' | '+ event + " | " + str(len(e)) + " events")
                 #for e_item in e:#adding timestamps
                 #    e_item['blockTimestamp']=timestamps[e_item['blockNumber']]
+                #errors += db_write_dicts(e, camel_to_snake_str(contract_name)+'_'+ camel_to_snake_str(event))
                 try:
                     errors += db_write_dicts(e, camel_to_snake_str(contract_name)+'_'+ camel_to_snake_str(event))
                 except Exception as err:
@@ -571,7 +591,7 @@ def sync_events(contract_name,contract_address, start_block, end_block, abi_v):
 
                                                     
  ##### #    # ######     ####   ####  #####  ###### 
-   #   #    # #         #    # #    # #    # #      
+   #   #    # #         #    # #    # #    # #         
    #   ###### #####     #      #    # #    # #####  
    #   #    # #         #      #    # #    # #      
    #   #    # #         #    # #    # #    # #      
@@ -587,6 +607,7 @@ initialization()
 tick_global = datetime.now()
 i=1
 while True:
+    rpc_calls = 0
     #Hub events
     tick_cycle = datetime.now()
     start_block, end_block, cur_window, abi_v = define_blocks_to_sync()
@@ -642,6 +663,7 @@ while True:
         tock_cycle = datetime.now()
         print('\tCycle '+ str((tock_cycle - tick_cycle).seconds) + 's, '+ str(round((tock_cycle - tick_cycle).seconds / cur_window, 2)) + 's per block | Total '+ str(cur_window*i)+' blocks, '+ str((tock_cycle - tick_global).seconds) + 's, '+ str(round((tock_cycle - tick_global).seconds / (cur_window*i), 2))+ 's per block |'  ,end='', flush=True)
         
+        i = i + 1
         if db_w_err == 0:
            db_update_latest_synced_block(end_block-1)
     else:
