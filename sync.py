@@ -41,6 +41,7 @@ contract_events_v2 = config["contract_events_v2"]
 contract_functions_v2 = config["contract_functions_v2"]
 sync_other_tx = config["sync_other_tx"]
 sync_pause = config["sync_pause"]
+chain_id = config["chain_id"]
 
 tables_events = ['assertion_assertion_created','commit_manager_v1_commit_submitted','commit_manager_v1_u1_commit_submitted','commit_manager_v1_u1_state_finalized','content_asset_asset_burnt','content_asset_asset_minted','content_asset_asset_state_update_canceled','content_asset_asset_state_updated','content_asset_asset_storing_period_extended','content_asset_asset_update_payment_increased','content_asset_payment_increased','content_asset_storage_transfer','identity_identity_created','identity_identity_deleted','identity_storage_key_added','identity_storage_key_removed','profile_ask_updated','profile_profile_created','profile_profile_deleted','proof_manager_v1_proof_submitted','proof_manager_v1_u1_proof_submitted','service_agreement_v1_commit_submitted','service_agreement_v1_proof_submitted','service_agreement_v1_service_agreement_v1_created','service_agreement_v1_service_agreement_v1_extended','service_agreement_v1_service_agreement_v1_reward_raised','service_agreement_v1_service_agreement_v1_terminated','service_agreement_v1_service_agreement_v1_update_reward_raised','sharding_table_node_added','sharding_table_node_removed','staking_accumulated_operator_fee_increased','staking_accumulated_operator_fee_updated','staking_reward_added','staking_stake_increased','staking_stake_withdrawal_started','staking_stake_withdrawn','token_approval','token_transfer','hub_asset_storage_changed','hub_contract_changed','hub_new_asset_storage','hub_new_contract']
 tables_txs = ['assertion_tx','commit_manager_v1_tx','commit_manager_v1_u1_tx','content_asset_storage_tx','content_asset_tx','hub_tx','identity_storage_tx','identity_tx','other_tx','profile_tx','proof_manager_v1_tx','proof_manager_v1_u1_tx','service_agreement_v1_tx','sharding_table_tx','staking_tx','token_tx']
@@ -528,31 +529,31 @@ def split_blocks_txs(attribute_dict_list):
 def format_and_write_txs(txs):
     errors = 0
     for index, item in enumerate(txs):
-        if txs[index]['to'] in contracts.keys():
-            #cur_contract_name = contracts[txs[index]['to']]
-            cur_contract_name = contracts[txs[index]['to']]['name']
-            a = w3.eth.contract(address=txs[index]['to'],abi=abis[cur_contract_name])    
-            func = a.decode_function_input(txs[index]['input'])
-            cur_func_name = func[0].fn_name
-
-            txs[index]['function'] = cur_func_name
-            #table_name = camel_to_snake_str(contracts[txs[index]['to']]+'Tx')
-            table_name = camel_to_snake_str(cur_contract_name+'Tx')
-            if cur_func_name in contract_functions[cur_contract_name]: #decode input_data and write to tx table
-                if cur_func_name == 'createAssetWithVariables':
-                    cur_func_name = 'createAsset'
-                for key,val in func[1].items():
-                    txs[index][cur_func_name+key[0].upper() + key[1:]] = val
-                #txs[index] = flatten_args(item, cur_func_name)
-            #errors += db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
-            try:
-                errors += db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
-            except Exception as e:
-                print('format_and_write_txs exception')
-                print(e)
-                print(table_name)
-                print(txs[index])
-                sys.exit()
+        if txs[index]['to'] in contracts.keys(): 
+            if chain_id != 100 or (chain_id == 100 and txs[index]['input'][:10]!='0x4000aea0'): #this is for Gnosis chain, my ABI does not have info for transferAndCall function, so i exclude it with this IF
+                cur_contract_name = contracts[txs[index]['to']]['name']
+                a = w3.eth.contract(address=txs[index]['to'],abi=abis[cur_contract_name])    
+                func = a.decode_function_input(txs[index]['input'])
+                cur_func_name = func[0].fn_name
+    
+                txs[index]['function'] = cur_func_name
+                #table_name = camel_to_snake_str(contracts[txs[index]['to']]+'Tx')
+                table_name = camel_to_snake_str(cur_contract_name+'Tx')
+                if cur_func_name in contract_functions[cur_contract_name]: #decode input_data and write to tx table
+                    if cur_func_name == 'createAssetWithVariables':
+                        cur_func_name = 'createAsset'
+                    for key,val in func[1].items():
+                        txs[index][cur_func_name+key[0].upper() + key[1:]] = val
+                    #txs[index] = flatten_args(item, cur_func_name)
+                #errors += db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
+                try:
+                    errors += db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
+                except Exception as e:
+                    print('format_and_write_txs exception')
+                    print(e)
+                    print(table_name)
+                    print(txs[index])
+                    sys.exit()
             
         elif sync_other_tx == True: #all other txs, work only for OTP, which is TRAC dedicated chain. On other chains there will be a lot of unrelated txs 
             errors += db_write_dict(txs[index],'other_tx')
