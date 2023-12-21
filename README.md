@@ -37,6 +37,13 @@ For the most part mainnet and testnet configs are the same, but there are some v
    "v2_abi_block":7137657,  
    "start_block":7137657  
    
+**Gnosis mainnet specific values:**  
+   "rpc":"wss://rpc.gnosischain.com/wss",  
+   "sync_other_tx":false,  
+   "chain_id":100,  
+   "hub_addr":"0xbEF14fc04F870c2dD65c13Df4faB6ba01A9c746b",  
+   "v2_abi_block":31526167,  
+   "start_block":31526167  
 
 # Database
 ## Tables
