@@ -15,6 +15,7 @@
    "rpc_retry_delay":60,
    "sync_window":50,
    "sync_pause":120,
+   "sync_lag":10,
   "contract_events_v1":{
         "Assertion":["AssertionCreated"],
         "CommitManagerV1":["CommitSubmitted"],

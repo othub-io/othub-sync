@@ -42,6 +42,7 @@ contract_functions_v2 = config["contract_functions_v2"]
 sync_other_tx = config["sync_other_tx"]
 sync_pause = config["sync_pause"]
 chain_id = config["chain_id"]
+sync_lag = config["sync_lag"]
 
 tables_events = ['assertion_assertion_created','commit_manager_v1_commit_submitted','commit_manager_v1_u1_commit_submitted','commit_manager_v1_u1_state_finalized','content_asset_asset_burnt','content_asset_asset_minted','content_asset_asset_state_update_canceled','content_asset_asset_state_updated','content_asset_asset_storing_period_extended','content_asset_asset_update_payment_increased','content_asset_payment_increased','content_asset_storage_transfer','identity_identity_created','identity_identity_deleted','identity_storage_key_added','identity_storage_key_removed','profile_ask_updated','profile_profile_created','profile_profile_deleted','proof_manager_v1_proof_submitted','proof_manager_v1_u1_proof_submitted','service_agreement_v1_commit_submitted','service_agreement_v1_proof_submitted','service_agreement_v1_service_agreement_v1_created','service_agreement_v1_service_agreement_v1_extended','service_agreement_v1_service_agreement_v1_reward_raised','service_agreement_v1_service_agreement_v1_terminated','service_agreement_v1_service_agreement_v1_update_reward_raised','sharding_table_node_added','sharding_table_node_removed','staking_accumulated_operator_fee_increased','staking_accumulated_operator_fee_updated','staking_reward_added','staking_stake_increased','staking_stake_withdrawal_started','staking_stake_withdrawn','token_approval','token_transfer','hub_asset_storage_changed','hub_contract_changed','hub_new_asset_storage','hub_new_contract']
 tables_txs = ['assertion_tx','commit_manager_v1_tx','commit_manager_v1_u1_tx','content_asset_storage_tx','content_asset_tx','hub_tx','identity_storage_tx','identity_tx','other_tx','profile_tx','proof_manager_v1_tx','proof_manager_v1_u1_tx','service_agreement_v1_tx','sharding_table_tx','staking_tx','token_tx']
@@ -462,6 +463,7 @@ def load_abis(abi_v):
 
 def define_blocks_to_sync():
     status, latest_block = rpc_call('w3.eth.block_number')
+    latest_block = latest_block - sync_lag
     if status == 'pass':
         start_block = db_fetch_last_sycned_block()
         if start_block < latest_block:
