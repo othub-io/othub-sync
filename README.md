@@ -4,7 +4,7 @@ OTHub Sync is a Python-based repository that fetches blocks, transactions and ev
 
 # Setup
 Clone the repo  
-Create database structure by restoring restore_me_step1.sql dump, then restore_me_step2.sql
+Create database structure by restoring restore_me_step1.sql dump, then restore_me_step2.sql  
 Update config file  
 Run the python script  
 
