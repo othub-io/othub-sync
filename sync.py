@@ -314,7 +314,13 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
         del dict1['state_root']
         del dict1['total_difficulty']
         del dict1['transactions_root']
-        
+        if 'blob_gas_used' in dict1:
+            del dict1['blob_gas_used']
+        if 'excess_blob_gas' in dict1:
+            del dict1['excess_blob_gas']
+        if 'parent_beacon_block_root' in dict1:
+            del dict1['parent_beacon_block_root']
+            
         #these do not exist on OTP, but do on Gnosis Testnet at least
         if "mix_hash" in dict1:
             del dict1["mix_hash"]
