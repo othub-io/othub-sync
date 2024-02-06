@@ -33,7 +33,7 @@ For the most part mainnet and testnet configs are the same, but there are some v
    "sync_other_tx":false,  
    "chain_id":10200,  
    "hub_addr":"0xC06210312C9217A0EdF67453618F5eB96668679A",  
-   "v2_abi_block":7137657,
+   "v2_abi_block":7137657,  
    "v3_abi_block":8045269,   
    "start_block":7137657  
    
