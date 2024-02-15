@@ -25,6 +25,7 @@ with open('config.json', 'r') as f: #load config
 rpc = config["rpc"]
 hub_addr = config["hub_addr"]
 v2_abi_block = config["v2_abi_block"]
+v3_abi_block = config["v3_abi_block"]
 db_host = config["db_host"]
 db_user = config["db_user"]
 db_password = config["db_password"]
@@ -39,13 +40,15 @@ contract_events_v1 = config["contract_events_v1"]
 contract_functions_v1 = config["contract_functions_v1"]
 contract_events_v2 = config["contract_events_v2"]
 contract_functions_v2 = config["contract_functions_v2"]
+contract_events_v3 = config["contract_events_v3"]
+contract_functions_v3 = config["contract_functions_v3"]
 sync_other_tx = config["sync_other_tx"]
 sync_pause = config["sync_pause"]
 chain_id = config["chain_id"]
 sync_lag = config["sync_lag"]
 
-tables_events = ['assertion_assertion_created','commit_manager_v1_commit_submitted','commit_manager_v1_u1_commit_submitted','commit_manager_v1_u1_state_finalized','content_asset_asset_burnt','content_asset_asset_minted','content_asset_asset_state_update_canceled','content_asset_asset_state_updated','content_asset_asset_storing_period_extended','content_asset_asset_update_payment_increased','content_asset_payment_increased','content_asset_storage_transfer','identity_identity_created','identity_identity_deleted','identity_storage_key_added','identity_storage_key_removed','profile_ask_updated','profile_profile_created','profile_profile_deleted','proof_manager_v1_proof_submitted','proof_manager_v1_u1_proof_submitted','service_agreement_v1_commit_submitted','service_agreement_v1_proof_submitted','service_agreement_v1_service_agreement_v1_created','service_agreement_v1_service_agreement_v1_extended','service_agreement_v1_service_agreement_v1_reward_raised','service_agreement_v1_service_agreement_v1_terminated','service_agreement_v1_service_agreement_v1_update_reward_raised','sharding_table_node_added','sharding_table_node_removed','staking_accumulated_operator_fee_increased','staking_accumulated_operator_fee_updated','staking_reward_added','staking_stake_increased','staking_stake_withdrawal_started','staking_stake_withdrawn','token_approval','token_transfer','hub_asset_storage_changed','hub_contract_changed','hub_new_asset_storage','hub_new_contract']
-tables_txs = ['assertion_tx','commit_manager_v1_tx','commit_manager_v1_u1_tx','content_asset_storage_tx','content_asset_tx','hub_tx','identity_storage_tx','identity_tx','other_tx','profile_tx','proof_manager_v1_tx','proof_manager_v1_u1_tx','service_agreement_v1_tx','sharding_table_tx','staking_tx','token_tx']
+tables_events = ['assertion_assertion_created','commit_manager_v1_commit_submitted','commit_manager_v1_u1_commit_submitted','commit_manager_v1_u1_state_finalized','content_asset_asset_burnt','content_asset_asset_minted','content_asset_asset_state_update_canceled','content_asset_asset_state_updated','content_asset_asset_storing_period_extended','content_asset_asset_update_payment_increased','content_asset_payment_increased','content_asset_storage_transfer','identity_identity_created','identity_identity_deleted','identity_storage_key_added','identity_storage_key_removed','profile_ask_updated','profile_profile_created','profile_profile_deleted','proof_manager_v1_proof_submitted','proof_manager_v1_u1_proof_submitted','service_agreement_v1_commit_submitted','service_agreement_v1_proof_submitted','service_agreement_v1_service_agreement_v1_created','service_agreement_v1_service_agreement_v1_extended','service_agreement_v1_service_agreement_v1_reward_raised','service_agreement_v1_service_agreement_v1_terminated','service_agreement_v1_service_agreement_v1_update_reward_raised','sharding_table_node_added','sharding_table_node_removed','staking_accumulated_operator_fee_increased','staking_accumulated_operator_fee_updated','staking_reward_added','staking_stake_increased','staking_stake_withdrawal_started','staking_stake_withdrawn','token_approval','token_transfer','hub_asset_storage_changed','hub_contract_changed','hub_new_asset_storage','hub_new_contract','staking_operator_fee_change_finished','staking_operator_fee_change_started','staking_reward_collected','staking_shares_burned','staking_shares_minted']
+tables_txs = ['assertion_tx','commit_manager_v1_tx','commit_manager_v1_u1_tx','content_asset_storage_tx','content_asset_tx','hub_tx','identity_storage_tx','identity_tx','other_tx','profile_tx','proof_manager_v1_tx','proof_manager_v1_u1_tx','service_agreement_v1_tx','sharding_table_tx','staking_tx','token_tx']#,'profile_storage_tx']
 
 
                                            
@@ -319,8 +322,8 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
         if 'excess_blob_gas' in dict1:
             del dict1['excess_blob_gas']
         if 'parent_beacon_block_root' in dict1:
-            del dict1['parent_beacon_block_root']
-            
+            del dict1['parent_beacon_block_root']        
+        
         #these do not exist on OTP, but do on Gnosis Testnet at least
         if "mix_hash" in dict1:
             del dict1["mix_hash"]
@@ -375,7 +378,12 @@ def db_fetch_last_sycned_block():
 #so 1000 blocks is the buffer for that
 def db_fetch_contracts(start_block,cur_window):
     q = "call sp_list_contracts(%s,%s)"
-    v = (start_block-5000,cur_window + 5000) 
+    extra_window = 10000
+    if chain_id==10200:
+        v = (7137666,start_block-7137666+cur_window + extra_window)
+    else:
+        v = (start_block-extra_window,cur_window + extra_window) 
+
     c.execute(q,v)
     res = c.fetchall()
     try:
@@ -420,7 +428,7 @@ def rpc_call(call):
             rpc_calls = rpc_calls + 1
     return status, res
  
-def rpc_call_events(contr, event, start_block, end_block):
+def rpc_call_events(contr, event, start_block, end_block,contract_name, contract_address):
     status = None
     res = None
     retries = 0
@@ -429,6 +437,25 @@ def rpc_call_events(contr, event, start_block, end_block):
         try:
             e_filter = eval("contr.events."+ event+"().create_filter(fromBlock=start_block, toBlock=end_block - 1)")
             res = e_filter.get_all_entries()
+        except OverflowError:
+            print('Trying fallback_1 '+contract_name+' ABI')   
+            with open('./abis/'+abi_v+'/'+contract_name+ '_fallback_1.json', 'r') as f: #load config
+                abi = json.load(f)
+            contr = w3.eth.contract(address=contract_address,abi=abi)
+            try:
+                e_filter = eval("contr.events."+ event+"().create_filter(fromBlock=start_block, toBlock=end_block - 1)")
+                res = e_filter.get_all_entries()
+            except OverflowError:
+                print('Trying fallback_2 '+contract_name+' ABI')   
+                with open('./abis/'+abi_v+'/'+contract_name+ '_fallback_2.json', 'r') as f: #load config
+                    abi = json.load(f)
+                contr = w3.eth.contract(address=contract_address,abi=abi)
+                try:
+                    e_filter = eval("contr.events."+ event+"().create_filter(fromBlock=start_block, toBlock=end_block - 1)")
+                    res = e_filter.get_all_entries()
+                except:
+                    print('call_rpc Exception at fallback_2 - ' + str(e))
+                    status = 'fail'
         except Exception as e:
             print('call_rpc Exception - ' + str(e))
             print('Retry in '+ str(rpc_retry_delay) + 's. ' + str(rpc_max_retries - retries) + ' retries left.')
@@ -451,10 +478,11 @@ def load_abis(abi_v):
     abis = {}
     path = './abis/'+ abi_v + '/'
     for filename in os.listdir(path):
-        file_path = os.path.join(path, filename)
-        with open(file_path, 'r') as file:
-            json_content = json.load(file)
-            abis[filename[:-5]] = json_content
+        if filename.endswith('.json'):
+            file_path = os.path.join(path, filename)
+            with open(file_path, 'r') as file:
+                json_content = json.load(file)
+                abis[filename[:-5]] = json_content
     return abis        
             
 
@@ -482,15 +510,24 @@ def define_blocks_to_sync():
         else:
             cur_window = 0
             end_block = latest_block
-    
-        if start_block < v2_abi_block and end_block <= v2_abi_block:
-            abi_v = 'v1'
-        elif start_block > v2_abi_block and end_block > v2_abi_block:
+        
+        if start_block > v3_abi_block and end_block > v3_abi_block:
+            abi_v = 'v3'
+        elif start_block <= v3_abi_block and end_block > v3_abi_block:
             abi_v = 'v2'
-        else:
+            end_block = v3_abi_block + 1
+            cur_window = v3_abi_block - start_block + 1
+        elif start_block > v2_abi_block and end_block <= v3_abi_block:
+            abi_v = 'v2'
+        elif start_block <= v2_abi_block and end_block > v2_abi_block:
             abi_v = 'v1'
             end_block = v2_abi_block + 1
             cur_window = v2_abi_block - start_block + 1
+        elif start_block < v2_abi_block and end_block <= v2_abi_block:
+            abi_v = 'v1'
+        else:
+            sys.exit()
+           
     else:
         sys.exit()
     return start_block, end_block, cur_window, abi_v
@@ -541,7 +578,14 @@ def format_and_write_txs(txs):
             if chain_id != 100 or (chain_id == 100 and txs[index]['input'][:10]!='0x4000aea0'): #this is for Gnosis chain, my ABI does not have info for transferAndCall function, so i exclude it with this IF
                 cur_contract_name = contracts[txs[index]['to']]['name']
                 a = w3.eth.contract(address=txs[index]['to'],abi=abis[cur_contract_name])    
-                func = a.decode_function_input(txs[index]['input'])
+                try:
+                    func = a.decode_function_input(txs[index]['input'])
+                except Exception as e:
+                    print('decode_function_input exception')
+                    print(e)
+                    print(txs[index])
+                    db_close_connection(conn,c)
+                    sys.exit()
                 cur_func_name = func[0].fn_name
     
                 txs[index]['function'] = cur_func_name
@@ -561,6 +605,7 @@ def format_and_write_txs(txs):
                     print(e)
                     print(table_name)
                     print(txs[index])
+                    db_close_connection(conn,c)
                     sys.exit()
             
         elif sync_other_tx == True: #all other txs, work only for OTP, which is TRAC dedicated chain. On other chains there will be a lot of unrelated txs 
@@ -577,7 +622,7 @@ def sync_events(contract_name,contract_address, start_block, end_block, abi_v):
     for event in contract_events[contract_name]:
         #print("\t" +contract_name+ ' | '+ event)
         global e #debug
-        status, res = rpc_call_events(contr, event, start_block, end_block)
+        status, res = rpc_call_events(contr, event, start_block, end_block,contract_name,contract_address)
         if status == 'pass':
             e = to_dict(res)
             if len(e) > 0:
@@ -627,6 +672,9 @@ while True:
     elif abi_v == 'v2':
         contract_events = contract_events_v2
         contract_functions = contract_functions_v2
+    elif abi_v == 'v3':
+        contract_events = contract_events_v3
+        contract_functions = contract_functions_v3
     
     if cur_window > 0:
         tick = datetime.now()

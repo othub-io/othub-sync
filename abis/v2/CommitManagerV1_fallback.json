@@ -24,11 +24,6 @@
       },
       {
         "internalType": "uint256",
-        "name": "stateIndex",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
         "name": "commitWindowOpen",
         "type": "uint256"
       },
@@ -59,53 +54,6 @@
         "type": "uint16"
       },
       {
-        "internalType": "uint8",
-        "name": "agreementScoreFunctionId",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "timeNow",
-        "type": "uint256"
-      }
-    ],
-    "name": "InvalidScoreFunctionId",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "assetStorage",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "NoPendingUpdate",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "agreementId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint16",
-        "name": "epoch",
-        "type": "uint16"
-      },
-      {
-        "internalType": "uint256",
-        "name": "stateIndex",
-        "type": "uint256"
-      },
-      {
         "internalType": "uint72",
         "name": "identityId",
         "type": "uint72"
@@ -130,11 +78,6 @@
         "internalType": "uint16",
         "name": "epoch",
         "type": "uint16"
-      },
-      {
-        "internalType": "uint256",
-        "name": "stateIndex",
-        "type": "uint256"
       },
       {
         "internalType": "uint72",
@@ -222,13 +165,13 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "assetContract",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
@@ -252,13 +195,7 @@
         "type": "uint16"
       },
       {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "stateIndex",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint72",
         "name": "identityId",
         "type": "uint72"
@@ -274,68 +211,6 @@
     "type": "event"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "assetContract",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "keyword",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "hashFunctionId",
-        "type": "uint8"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint16",
-        "name": "epoch",
-        "type": "uint16"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "stateIndex",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes32",
-        "name": "state",
-        "type": "bytes32"
-      }
-    ],
-    "name": "StateFinalized",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "contentAssetStorage",
-    "outputs": [
-      {
-        "internalType": "contract ContentAssetStorage",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "bytes32",
@@ -346,11 +221,6 @@
         "internalType": "uint16",
         "name": "epoch",
         "type": "uint16"
-      },
-      {
-        "internalType": "uint256",
-        "name": "stateIndex",
-        "type": "uint256"
       }
     ],
     "name": "getTopCommitSubmissions",
@@ -446,35 +316,6 @@
       }
     ],
     "name": "isCommitWindowOpen",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "agreementId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint16",
-        "name": "epoch",
-        "type": "uint16"
-      },
-      {
-        "internalType": "uint256",
-        "name": "stateIndex",
-        "type": "uint256"
-      }
-    ],
-    "name": "isUpdateCommitWindowOpen",
     "outputs": [
       {
         "internalType": "bool",
@@ -690,59 +531,6 @@
     "name": "submitCommit",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "assetContract",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "tokenId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bytes",
-            "name": "keyword",
-            "type": "bytes"
-          },
-          {
-            "internalType": "uint8",
-            "name": "hashFunctionId",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint16",
-            "name": "epoch",
-            "type": "uint16"
-          }
-        ],
-        "internalType": "struct ServiceAgreementStructsV1.CommitInputArgs",
-        "name": "args",
-        "type": "tuple"
-      }
-    ],
-    "name": "submitUpdateCommit",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "unfinalizedStateStorage",
-    "outputs": [
-      {
-        "internalType": "contract UnfinalizedStateStorage",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

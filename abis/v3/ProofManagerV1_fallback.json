@@ -23,63 +23,6 @@
         "type": "uint16"
       },
       {
-        "internalType": "uint256",
-        "name": "commitWindowOpen",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "commitWindowClose",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "timeNow",
-        "type": "uint256"
-      }
-    ],
-    "name": "CommitWindowClosed",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "agreementId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint16",
-        "name": "epoch",
-        "type": "uint16"
-      },
-      {
-        "internalType": "uint8",
-        "name": "agreementScoreFunctionId",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "timeNow",
-        "type": "uint256"
-      }
-    ],
-    "name": "InvalidScoreFunctionId",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "agreementId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint16",
-        "name": "epoch",
-        "type": "uint16"
-      },
-      {
         "internalType": "uint72",
         "name": "identityId",
         "type": "uint72"
@@ -90,7 +33,7 @@
         "type": "bytes"
       }
     ],
-    "name": "NodeAlreadySubmittedCommit",
+    "name": "NodeAlreadyRewarded",
     "type": "error"
   },
   {
@@ -127,27 +70,32 @@
   {
     "inputs": [
       {
-        "internalType": "uint72",
-        "name": "identityId",
-        "type": "uint72"
+        "internalType": "bytes32",
+        "name": "agreementId",
+        "type": "bytes32"
       },
       {
-        "internalType": "bytes",
-        "name": "nodeId",
-        "type": "bytes"
+        "internalType": "uint16",
+        "name": "epoch",
+        "type": "uint16"
       },
       {
-        "internalType": "uint96",
-        "name": "ask",
-        "type": "uint96"
+        "internalType": "uint256",
+        "name": "proofWindowOpen",
+        "type": "uint256"
       },
       {
-        "internalType": "uint96",
-        "name": "stake",
-        "type": "uint96"
+        "internalType": "uint256",
+        "name": "proofWindowClose",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timeNow",
+        "type": "uint256"
       }
     ],
-    "name": "NodeNotInShardingTable",
+    "name": "ProofWindowClosed",
     "type": "error"
   },
   {
@@ -188,16 +136,62 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "agreementId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint16",
+        "name": "epoch",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      },
+      {
+        "internalType": "bytes",
+        "name": "nodeId",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "merkleProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "merkleRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "chunkHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "challenge",
+        "type": "uint256"
+      }
+    ],
+    "name": "WrongMerkleProof",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "assetContract",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
@@ -221,27 +215,44 @@
         "type": "uint16"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint72",
         "name": "identityId",
         "type": "uint72"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint40",
-        "name": "score",
-        "type": "uint40"
       }
     ],
-    "name": "CommitSubmitted",
+    "name": "ProofSubmitted",
     "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "assertionStorage",
+    "outputs": [
+      {
+        "internalType": "contract AssertionStorage",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "agreementId",
-        "type": "bytes32"
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "assetContract",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       },
       {
         "internalType": "uint16",
@@ -249,34 +260,17 @@
         "type": "uint16"
       }
     ],
-    "name": "getTopCommitSubmissions",
+    "name": "getChallenge",
     "outputs": [
       {
-        "components": [
-          {
-            "internalType": "uint72",
-            "name": "identityId",
-            "type": "uint72"
-          },
-          {
-            "internalType": "uint72",
-            "name": "prevIdentityId",
-            "type": "uint72"
-          },
-          {
-            "internalType": "uint72",
-            "name": "nextIdentityId",
-            "type": "uint72"
-          },
-          {
-            "internalType": "uint40",
-            "name": "score",
-            "type": "uint40"
-          }
-        ],
-        "internalType": "struct ServiceAgreementStructsV1.CommitSubmission[]",
-        "name": "",
-        "type": "tuple[]"
+        "internalType": "bytes32",
+        "name": "assertionId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "challenge",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -341,7 +335,7 @@
         "type": "uint16"
       }
     ],
-    "name": "isCommitWindowOpen",
+    "name": "isProofWindowOpen",
     "outputs": [
       {
         "internalType": "bool",
@@ -411,16 +405,53 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "scoringProxy",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "contract ScoringProxy",
-        "name": "",
-        "type": "address"
+        "components": [
+          {
+            "internalType": "address",
+            "name": "assetContract",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "keyword",
+            "type": "bytes"
+          },
+          {
+            "internalType": "uint8",
+            "name": "hashFunctionId",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "epoch",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bytes32[]",
+            "name": "proof",
+            "type": "bytes32[]"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "chunkHash",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct ServiceAgreementStructsV1.ProofInputArgs",
+        "name": "args",
+        "type": "tuple"
       }
     ],
-    "stateMutability": "view",
+    "name": "sendProof",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -469,36 +500,10 @@
   },
   {
     "inputs": [],
-    "name": "shardingTableStorage",
-    "outputs": [
-      {
-        "internalType": "contract ShardingTableStorage",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "stakingContract",
     "outputs": [
       {
         "internalType": "contract Staking",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "stakingStorage",
-    "outputs": [
-      {
-        "internalType": "contract StakingStorage",
         "name": "",
         "type": "address"
       }
@@ -517,46 +522,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "assetContract",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "tokenId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bytes",
-            "name": "keyword",
-            "type": "bytes"
-          },
-          {
-            "internalType": "uint8",
-            "name": "hashFunctionId",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint16",
-            "name": "epoch",
-            "type": "uint16"
-          }
-        ],
-        "internalType": "struct ServiceAgreementStructsV1.CommitInputArgs",
-        "name": "args",
-        "type": "tuple"
-      }
-    ],
-    "name": "submitCommit",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
