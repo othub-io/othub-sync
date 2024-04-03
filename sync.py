@@ -167,13 +167,22 @@ def initialization():
     conn.commit()
 
     q = "SELECT * FROM contracts where contract_address=%s"
-    v = v = (hub_addr,)
+    v = (hub_addr,)
     c.execute(q,v)
     res = c.fetchone()
     if res == None:
-        q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
-        v = (1,hub_addr)
-        db_run_tx(q,v)
+        if chain_id==100: #TRAC token contract was deployed on GNO mainnet long time ago, its out of this sync scope, so i need to add contract manually
+            q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
+            v = (1,hub_addr)
+            db_run_tx(q,v)
+            
+            q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
+            v = (2, '0xEddd81E0792E764501AaE206EB432399a0268DB5')
+            db_run_tx(q,v)
+        else:
+            q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
+            v = (1,hub_addr)
+            db_run_tx(q,v)
         
     
     q = "SELECT block_num FROM sync_status where parameter='staging_table'"
@@ -300,7 +309,8 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
         dict1['create_service_agreement_keyword']=dict1['create_service_agreement_keyword'][-64:]   
 
     if table_name == 'block':
-        del dict1['author']
+        if 'author' in dict1:
+            del dict1['author']
         del dict1['base_fee_per_gas']
         del dict1['difficulty']
         del dict1['extra_data']
@@ -322,8 +332,8 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
         if 'excess_blob_gas' in dict1:
             del dict1['excess_blob_gas']
         if 'parent_beacon_block_root' in dict1:
-            del dict1['parent_beacon_block_root']        
-        
+            del dict1['parent_beacon_block_root']
+            
         #these do not exist on OTP, but do on Gnosis Testnet at least
         if "mix_hash" in dict1:
             del dict1["mix_hash"]
@@ -338,6 +348,9 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
     q = f"INSERT INTO {table_name} (`{'`,`'.join(column_names)}`) VALUES ({', '.join(['%s']*len(column_names))})"
     
     v = tuple(dict1[column] for column in column_names)
+										  
+				 
+				 
     rowcount = db_run_tx(q, v)
     if rowcount != 1:
         errors = 1
@@ -383,7 +396,6 @@ def db_fetch_contracts(start_block,cur_window):
         v = (7137666,start_block-7137666+cur_window + extra_window)
     else:
         v = (start_block-extra_window,cur_window + extra_window) 
-
     c.execute(q,v)
     res = c.fetchall()
     try:
@@ -470,7 +482,7 @@ def rpc_call_events(contr, event, start_block, end_block,contract_name, contract
             retries = rpc_max_retries + 1
             global rpc_calls 
             rpc_calls = rpc_calls + 1
-    return status, res   
+    return status, res     
     
 
 
@@ -598,6 +610,7 @@ def format_and_write_txs(txs):
                         txs[index][cur_func_name+key[0].upper() + key[1:]] = val
                     #txs[index] = flatten_args(item, cur_func_name)
                 #errors += db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
+                #db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
                 try:
                     errors += db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
                 except Exception as e:
@@ -607,7 +620,7 @@ def format_and_write_txs(txs):
                     print(txs[index])
                     db_close_connection(conn,c)
                     sys.exit()
-            
+                
         elif sync_other_tx == True: #all other txs, work only for OTP, which is TRAC dedicated chain. On other chains there will be a lot of unrelated txs 
             errors += db_write_dict(txs[index],'other_tx')
     return errors
@@ -725,7 +738,7 @@ while True:
            db_update_latest_synced_block(end_block-1)
     else:
         print('Latest synched block - ' + str(start_block) + '. Latest RPC block - ' + str(end_block) +'. No new data to sync')
-    
+    #sys.exit()
     #sleep(10)
     #i+=1
     if cur_window < sync_window: #full sync is done
@@ -734,9 +747,6 @@ while True:
     print('----------------------------------------------------------')
 
 db_close_connection(conn,c)
-
-
-
 
 
 
