@@ -176,9 +176,13 @@ def initialization():
             v = (1,hub_addr)
             db_run_tx(q,v)
             
-            q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
-            v = (2, '0xEddd81E0792E764501AaE206EB432399a0268DB5')
+            q = "insert into hub_new_contract values (%s,%s,%s,%s,%s,%s)"
+            v = ('Token','0xEddd81E0792E764501AaE206EB432399a0268DB5',0,0,14228732,1)
             db_run_tx(q,v)
+            
+            #q = "call sp_update_contracts();"
+            #v = None
+            #db_run_tx(q,v)
         else:
             q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
             v = (1,hub_addr)
@@ -747,6 +751,10 @@ while True:
     print('----------------------------------------------------------')
 
 db_close_connection(conn,c)
+
+
+
+
 
 
 
