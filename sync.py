@@ -1,13 +1,4 @@
-'''
-TODO:
-    1346220 in this block there is a tx which tries to create Hub contract and it failed. Hub created in 1310133. It failed with collision and i don't know how to get tx status wiothout using receipts. And receipt returns data for correct tx
-  
-    in the beginning of the sync, while blocks are empty sync window 400 works fine
-    later 150 works very well
-    by block 2449078 even 100 blocks is too much
-    ideally sync_window should be adaptable, get lower in case payload is too big, then try to get bigger and see if payload is small enough
-    but i'm too lazy to implement it
-'''
+
 
 import os
 from web3 import Web3
@@ -17,6 +8,7 @@ from time import sleep
 from datetime import datetime
 from collections.abc import Mapping
 import sys
+
 
 
 with open('config.json', 'r') as f: #load config
@@ -47,8 +39,8 @@ sync_pause = config["sync_pause"]
 chain_id = config["chain_id"]
 sync_lag = config["sync_lag"]
 
-tables_events = ['assertion_assertion_created','commit_manager_v1_commit_submitted','commit_manager_v1_u1_commit_submitted','commit_manager_v1_u1_state_finalized','content_asset_asset_burnt','content_asset_asset_minted','content_asset_asset_state_update_canceled','content_asset_asset_state_updated','content_asset_asset_storing_period_extended','content_asset_asset_update_payment_increased','content_asset_payment_increased','content_asset_storage_transfer','identity_identity_created','identity_identity_deleted','identity_storage_key_added','identity_storage_key_removed','profile_ask_updated','profile_profile_created','profile_profile_deleted','proof_manager_v1_proof_submitted','proof_manager_v1_u1_proof_submitted','service_agreement_v1_commit_submitted','service_agreement_v1_proof_submitted','service_agreement_v1_service_agreement_v1_created','service_agreement_v1_service_agreement_v1_extended','service_agreement_v1_service_agreement_v1_reward_raised','service_agreement_v1_service_agreement_v1_terminated','service_agreement_v1_service_agreement_v1_update_reward_raised','sharding_table_node_added','sharding_table_node_removed','staking_accumulated_operator_fee_increased','staking_accumulated_operator_fee_updated','staking_reward_added','staking_stake_increased','staking_stake_withdrawal_started','staking_stake_withdrawn','token_approval','token_transfer','hub_asset_storage_changed','hub_contract_changed','hub_new_asset_storage','hub_new_contract','staking_operator_fee_change_finished','staking_operator_fee_change_started','staking_reward_collected','staking_shares_burned','staking_shares_minted']
-tables_txs = ['assertion_tx','commit_manager_v1_tx','commit_manager_v1_u1_tx','content_asset_storage_tx','content_asset_tx','hub_tx','identity_storage_tx','identity_tx','other_tx','profile_tx','proof_manager_v1_tx','proof_manager_v1_u1_tx','service_agreement_v1_tx','sharding_table_tx','staking_tx','token_tx']#,'profile_storage_tx']
+tables_events = ['assertion_assertion_created','commit_manager_v1_commit_submitted','commit_manager_v1_u1_commit_submitted','commit_manager_v1_u1_state_finalized','content_asset_asset_burnt','content_asset_asset_minted','content_asset_asset_state_update_canceled','content_asset_asset_state_updated','content_asset_asset_storing_period_extended','content_asset_asset_update_payment_increased','content_asset_payment_increased','content_asset_storage_transfer','identity_identity_created','identity_identity_deleted','identity_storage_key_added','identity_storage_key_removed','profile_ask_updated','profile_profile_created','profile_profile_deleted','proof_manager_v1_proof_submitted','proof_manager_v1_u1_proof_submitted','service_agreement_v1_commit_submitted','service_agreement_v1_proof_submitted','service_agreement_v1_service_agreement_v1_created','service_agreement_v1_service_agreement_v1_extended','service_agreement_v1_service_agreement_v1_reward_raised','service_agreement_v1_service_agreement_v1_terminated','service_agreement_v1_service_agreement_v1_update_reward_raised','sharding_table_node_added','sharding_table_node_removed','staking_accumulated_operator_fee_increased','staking_accumulated_operator_fee_updated','staking_reward_added','staking_stake_increased','staking_stake_withdrawal_started','staking_stake_withdrawn','token_approval','token_transfer','hub_asset_storage_changed','hub_contract_changed','hub_new_asset_storage','hub_new_contract','staking_operator_fee_change_finished','staking_operator_fee_change_started','staking_reward_collected','staking_shares_burned','staking_shares_minted','profile_accumulated_operator_fee_restaked','profile_accumulated_operator_fee_withdrawal_started','profile_accumulated_operator_fee_withdrawn','paranet_knowledge_asset_submitted_to_paranet','paranet_paranet_metadata_updated','paranet_paranet_registered','paranet_paranet_service_added','paranet_paranet_service_registered','paranet_paranet_service_metadata_updated']
+tables_txs = ['assertion_tx','commit_manager_v1_tx','commit_manager_v1_u1_tx','content_asset_storage_tx','content_asset_tx','hub_tx','identity_storage_tx','identity_tx','other_tx','profile_tx','proof_manager_v1_tx','proof_manager_v1_u1_tx','service_agreement_v1_tx','sharding_table_tx','staking_tx','token_tx','paranet_tx']#,'profile_storage_tx']
 
 
                                            
@@ -102,10 +94,13 @@ def unlistify_dict(input_dict):
 
 def camel_to_snake_str(camel_string):
     snake_string = ''
+    n = len(camel_string)
     for index, char in enumerate(camel_string):
-        if char.isupper() and index != 0:
-            snake_string += '_'
+        if char.isupper():
+            if index != 0 and (camel_string[index - 1].islower() or (index + 1 < n and camel_string[index + 1].islower())):
+                snake_string += '_'
         snake_string += char.lower()
+    snake_string=snake_string.replace("v1u1","v1_u1") #yeah... legacy
     return snake_string
 
 def camel_to_snake_list(camel_list):
@@ -171,22 +166,24 @@ def initialization():
     c.execute(q,v)
     res = c.fetchone()
     if res == None:
+        q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
+        v = (1,hub_addr)
+        db_run_tx(q,v)
+        
         if chain_id==100: #TRAC token contract was deployed on GNO mainnet long time ago, its out of this sync scope, so i need to add contract manually
-            q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
-            v = (1,hub_addr)
-            db_run_tx(q,v)
-            
             q = "insert into hub_new_contract values (%s,%s,%s,%s,%s,%s)"
             v = ('Token','0xEddd81E0792E764501AaE206EB432399a0268DB5',0,0,14228732,1)
             db_run_tx(q,v)
-            
-            #q = "call sp_update_contracts();"
-            #v = None
-            #db_run_tx(q,v)
-        else:
-            q = "insert into contracts (contract_id,contract_address) values (%s,%s)"
-            v = (1,hub_addr)
-            db_run_tx(q,v)
+       # if chain_id==84532:
+       #     q = "insert into hub_new_contract values (%s,%s,%s,%s,%s,%s)"
+       #     v = ('Token','0x9b17032749aa066a2DeA40b746AA6aa09CdE67d9',0,0,11434105,1)
+       #     db_run_tx(q,v)            
+       #if chain_id==8453:
+       #     q = "insert into hub_new_contract values (%s,%s,%s,%s,%s,%s)"
+       #     v = ('Token','0xA81a52B4dda010896cDd386C7fBdc5CDc835ba23',0,0,2615390,1)
+       #     db_run_tx(q,v)   
+
+
         
     
     q = "SELECT block_num FROM sync_status where parameter='staging_table'"
@@ -248,23 +245,9 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
             dict1['to_id']=contracts[dict1['to']].get('id')
             del dict1['to']
         
-        if "public_key" in dict1:
-            del dict1["public_key"]
-        if "raw" in dict1:
-            del dict1["raw"]
-        if "standard_v" in dict1:
-            del dict1["standard_v"]
-        if "y_parity" in dict1:
-            del dict1["y_parity"]           
-            
-        del dict1['block_hash']
-        del dict1['nonce']
-        del dict1['r']
-        del dict1['s']
-        del dict1['type']
-        del dict1['v']
-        del dict1['value']
-                
+        for item in ['public_key','raw','standard_v','y_parity','block_hash','nonce','r','s','type','v','value']:
+            if item in dict1:
+                del dict1[item]
         
     if table_name in ['commit_manager_v1_commit_submitted','commit_manager_v1_u1_commit_submitted','commit_manager_v1_u1_state_finalized','content_asset_asset_burnt','content_asset_asset_minted','content_asset_asset_state_update_canceled','content_asset_asset_state_updated','content_asset_asset_storing_period_extended','content_asset_asset_update_payment_increased','content_asset_payment_increased','proof_manager_v1_proof_submitted','proof_manager_v1_u1_proof_submitted','service_agreement_v1_commit_submitted','service_agreement_v1_proof_submitted','service_agreement_v1_service_agreement_v1_created']:
         dict1['asset_contract_id']=contracts[dict1['asset_contract']].get('id')
@@ -302,6 +285,15 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
         dict1['decrease_allowance_spender_id']=contracts[dict1['decrease_allowance_spender']].get('id')
         del dict1['decrease_allowance_spender'] 
 
+    if 'paranet_ka_storage_contract' in dict1:
+        dict1['paranet_ka_storage_contract_id']=contracts[dict1['paranet_ka_storage_contract']].get('id')
+        del dict1['paranet_ka_storage_contract']  
+    if 'knowledge_asset_storage_contract' in dict1:
+        dict1['knowledge_asset_storage_contract_id']=contracts[dict1['knowledge_asset_storage_contract']].get('id')
+        del dict1['knowledge_asset_storage_contract']
+    if 'paranet_service_ka_storage_contract' in dict1:
+        dict1['paranet_service_ka_storage_contract_id']=contracts[dict1['paranet_service_ka_storage_contract']].get('id')
+        del dict1['paranet_service_ka_storage_contract']
         
     if 'submit_commit_keyword' in dict1:
         dict1['submit_commit_keyword']=dict1['submit_commit_keyword'][-64:]
@@ -313,48 +305,16 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
         dict1['create_service_agreement_keyword']=dict1['create_service_agreement_keyword'][-64:]   
 
     if table_name == 'block':
-        if 'author' in dict1:
-            del dict1['author']
-        del dict1['base_fee_per_gas']
-        del dict1['difficulty']
-        del dict1['extra_data']
-        del dict1['gas_limit']
-        del dict1['gas_used']
-        del dict1['hash']
-        del dict1['logs_bloom']
-        del dict1['miner']
-        del dict1['nonce']
-        del dict1['parent_hash']
-        del dict1['receipts_root']
-        del dict1['sha3_uncles']
-        del dict1['size']
-        del dict1['state_root']
-        del dict1['total_difficulty']
-        del dict1['transactions_root']
-        if 'blob_gas_used' in dict1:
-            del dict1['blob_gas_used']
-        if 'excess_blob_gas' in dict1:
-            del dict1['excess_blob_gas']
-        if 'parent_beacon_block_root' in dict1:
-            del dict1['parent_beacon_block_root']
-            
-        #these do not exist on OTP, but do on Gnosis Testnet at least
-        if "mix_hash" in dict1:
-            del dict1["mix_hash"]
-        if "withdrawals" in dict1:
-            del dict1["withdrawals"]
-        if "withdrawals_root" in dict1:
-            del dict1["withdrawals_root"]
+        for item in ['author','base_fee_per_gas','difficulty','extra_data','gas_limit','hash','logs_bloom','miner','nonce','parent_hash','receipts_root','sha3_uncles','size','state_root','total_difficulty','transactions_root','blob_gas_used','excess_blob_gas','parent_beacon_block_root','mix_hash','withdrawals','withdrawals_root','gas_used']:
+            if item in dict1:
+                del dict1[item]
         
     column_names = list(dict1.keys())
             
     errors = 0
     q = f"INSERT INTO {table_name} (`{'`,`'.join(column_names)}`) VALUES ({', '.join(['%s']*len(column_names))})"
-    
     v = tuple(dict1[column] for column in column_names)
-										  
-				 
-				 
+    
     rowcount = db_run_tx(q, v)
     if rowcount != 1:
         errors = 1
@@ -559,6 +519,8 @@ def fetch_blocks_txs(start_block, cur_window):
             i = i + 1
             if i % 50 == 0:  #this is used only during initial sync
                 print('.',end='', flush=True)
+        else:
+            sys.exit()
     return blocks_txs
 
 
@@ -669,10 +631,11 @@ def sync_events(contract_name,contract_address, start_block, end_block, abi_v):
    #   #    # ######     ####   ####  #####  ###### 
 
 
-w3 = Web3(Web3.WebsocketProvider(rpc, websocket_timeout=60))#, websocket_kwargs ={'timeout': 60}))
+websocket_kwargs = {'max_size': 16777216}
+w3 = Web3(Web3.WebsocketProvider(rpc, websocket_kwargs=websocket_kwargs))
 db_w_err = 0
 conn, c = db_open_connection()
-
+    
 initialization()
 
 tick_global = datetime.now()
@@ -710,7 +673,7 @@ while True:
         tock = datetime.now()
         print(str((tock - tick).seconds) + 's')
         
-        #fetching and writing Hub events, also updateding contracts table
+        #fetching and writing Hub events, also updating contracts table
         tick = datetime.now()
         contracts = db_fetch_contracts(start_block,cur_window) #only for Hub contact ID really
         sync_events('Hub',hub_addr, start_block, end_block, abi_v)

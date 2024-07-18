@@ -12,55 +12,18 @@
   },
   {
     "inputs": [],
-    "name": "EmptyNodeId",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "EmptySharesTokenName",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "EmptySharesTokenSymbol",
+    "name": "InvalidOperatorFee",
     "type": "error"
   },
   {
     "inputs": [
       {
-        "internalType": "uint72",
-        "name": "identityId",
-        "type": "uint72"
-      },
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
-    "name": "IdentityAlreadyExists",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-								 
-							 
-						
-	   
-	  
-							 
-				   
-	
-   
-			   
-	   
-        "internalType": "bytes",
-        "name": "nodeId",
-        "type": "bytes"
-      }
-    ],
-    "name": "NodeIdAlreadyExists",
+    "name": "MaximumStakeExceeded",
     "type": "error"
   },
   {
@@ -77,72 +40,49 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
       }
     ],
-    "name": "OnlyProfileAdminOrOperationalAddressesFunction",
+    "name": "ProfileDoesntExist",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ShardingTableIsFull",
     "type": "error"
   },
   {
     "inputs": [
       {
         "internalType": "address",
-        "name": "caller",
+        "name": "tokenAddress",
         "type": "address"
-      }
-    ],
-    "name": "OnlyWhitelistedAddressesFunction",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint8",
-        "name": "operatorFee",
-        "type": "uint8"
-      }
-    ],
-    "name": "OperatorFeeOutOfRange",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "tokenName",
-        "type": "string"
-      }
-    ],
-    "name": "SharesTokenNameAlreadyExists",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "tokenSymbol",
-        "type": "string"
-      }
-    ],
-    "name": "SharesTokenSymbolAlreadyExists",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint16",
-        "name": "allowed",
-        "type": "uint16"
       },
       {
-        "internalType": "uint16",
-        "name": "provided",
-        "type": "uint16"
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
-    "name": "TooManyOperationalWallets",
+    "name": "TooLowAllowance",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "TooLowBalance",
     "type": "error"
   },
   {
@@ -168,7 +108,7 @@
   },
   {
     "inputs": [],
-    "name": "ZeroAsk",
+    "name": "ZeroSharesAmount",
     "type": "error"
   },
   {
@@ -199,7 +139,7 @@
         "type": "uint96"
       }
     ],
-    "name": "AccumulatedOperatorFeeRestaked",
+    "name": "AccumulatedOperatorFeeIncreased",
     "type": "event"
   },
   {
@@ -219,14 +159,205 @@
       },
       {
         "indexed": false,
+        "internalType": "uint8",
+        "name": "operatorFee",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "OperatorFeeChangeStarted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agreementId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "nodeId",
+        "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "serviceAgreementAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "uint96",
-        "name": "oldAccumulatedOperatorFee",
+        "name": "nodeOperatorFee",
         "type": "uint96"
       },
       {
         "indexed": false,
         "internalType": "uint96",
-        "name": "newAccumulatedOperatorFee",
+        "name": "delegatorsReward",
+        "type": "uint96"
+      }
+    ],
+    "name": "RewardCollected",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sharesContractAddress",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "sharesBurnedAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newTotalSupply",
+        "type": "uint256"
+      }
+    ],
+    "name": "SharesBurned",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "sharesContractAddress",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "sharesMintedAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newTotalSupply",
+        "type": "uint256"
+      }
+    ],
+    "name": "SharesMinted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "nodeId",
+        "type": "bytes"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "staker",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint96",
+        "name": "oldStake",
+        "type": "uint96"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint96",
+        "name": "newStake",
+        "type": "uint96"
+      }
+    ],
+    "name": "StakeIncreased",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "nodeId",
+        "type": "bytes"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "staker",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint96",
+        "name": "oldStake",
+        "type": "uint96"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint96",
+        "name": "newStake",
         "type": "uint96"
       },
       {
@@ -236,7 +367,7 @@
         "type": "uint256"
       }
     ],
-    "name": "AccumulatedOperatorFeeWithdrawalStarted",
+    "name": "StakeWithdrawalStarted",
     "type": "event"
   },
   {
@@ -253,141 +384,85 @@
         "internalType": "bytes",
         "name": "nodeId",
         "type": "bytes"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "staker",
+        "type": "address"
       },
       {
         "indexed": false,
         "internalType": "uint96",
-        "name": "withdrawnAmount",
+        "name": "withdrawnStakeAmount",
         "type": "uint96"
       }
     ],
-    "name": "AccumulatedOperatorFeeWithdrawn",
+    "name": "StakeWithdrawn",
     "type": "event"
   },
   {
-    "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "internalType": "bytes32",
+        "name": "agreementId",
+        "type": "bytes32"
+      },
+      {
         "internalType": "uint72",
         "name": "identityId",
         "type": "uint72"
       },
       {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "nodeId",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
         "internalType": "uint96",
-        "name": "ask",
+        "name": "rewardAmount",
         "type": "uint96"
       }
     ],
-    "name": "AskUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint72",
-        "name": "identityId",
-        "type": "uint72"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "nodeId",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "adminWallet",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "sharesContractAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "initialOperatorFee",
-        "type": "uint8"
-      }
-    ],
-    "name": "ProfileCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint72",
-        "name": "identityId",
-        "type": "uint72"
-      }
-    ],
-    "name": "ProfileDeleted",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "adminWallet",
-        "type": "address"
-      },
-      {
-        "internalType": "address[]",
-        "name": "operationalWallets",
-        "type": "address[]"
-      },
-      {
-        "internalType": "bytes",
-        "name": "nodeId",
-        "type": "bytes"
-      },
-      {
-        "internalType": "string",
-        "name": "sharesTokenName",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "sharesTokenSymbol",
-        "type": "string"
-      },
-      {
-        "internalType": "uint8",
-        "name": "initialOperatorFee",
-        "type": "uint8"
-      }
-    ],
-    "name": "createProfile",
+    "name": "addReward",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "hashingProxy",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "contract HashingProxy",
-        "name": "",
+        "internalType": "address",
+        "name": "sender",
         "type": "address"
+      },
+      {
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      },
+      {
+        "internalType": "uint96",
+        "name": "stakeAmount",
+        "type": "uint96"
       }
     ],
-    "stateMutability": "view",
+    "name": "addStake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      },
+      {
+        "internalType": "uint96",
+        "name": "stakeAmount",
+        "type": "uint96"
+      }
+    ],
+    "name": "addStake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -405,23 +480,10 @@
   },
   {
     "inputs": [],
-    "name": "identityContract",
-    "outputs": [
-      {
-        "internalType": "contract Identity",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "identityStorage",
     "outputs": [
       {
-        "internalType": "contract IdentityStorage",
+        "internalType": "contract IdentityStorageV2",
         "name": "",
         "type": "address"
       }
@@ -489,21 +551,16 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "serviceAgreementStorageProxy",
+    "outputs": [
       {
-        "internalType": "uint72",
-        "name": "identityId",
-        "type": "uint72"
-      },
-      {
-        "internalType": "uint96",
-        "name": "ask",
-        "type": "uint96"
+        "internalType": "contract ServiceAgreementStorageProxy",
+        "name": "",
+        "type": "address"
       }
     ],
-    "name": "setAsk",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -520,34 +577,42 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint72",
-        "name": "identityId",
-        "type": "uint72"
-      },
-      {
-        "internalType": "uint96",
-        "name": "restakeAmount",
-        "type": "uint96"
-      }
-    ],
-    "name": "stakeAccumulatedOperatorFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
-    "name": "stakingContract",
+    "name": "shardingTableContract",
     "outputs": [
       {
-        "internalType": "contract Staking",
+        "internalType": "contract ShardingTableV2",
         "name": "",
         "type": "address"
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "shardingTableStorage",
+    "outputs": [
+      {
+        "internalType": "contract ShardingTableStorageV2",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      }
+    ],
+    "name": "slash",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -571,12 +636,30 @@
         "type": "uint72"
       },
       {
+        "internalType": "uint8",
+        "name": "newFeePercentage",
+        "type": "uint8"
+      }
+    ],
+    "name": "startOperatorFeeChange",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint72",
+        "name": "identityId",
+        "type": "uint72"
+      },
+      {
         "internalType": "uint96",
-        "name": "withdrawalAmount",
+        "name": "sharesToBurn",
         "type": "uint96"
       }
     ],
-    "name": "startAccumulatedOperatorFeeWithdrawal",
+    "name": "startStakeWithdrawal",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -596,6 +679,19 @@
   },
   {
     "inputs": [],
+    "name": "tokenContract",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "version",
     "outputs": [
       {
@@ -608,19 +704,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "whitelistStorage",
-    "outputs": [
-      {
-        "internalType": "contract WhitelistStorage",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint72",
@@ -628,7 +711,7 @@
         "type": "uint72"
       }
     ],
-    "name": "withdrawAccumulatedOperatorFee",
+    "name": "withdrawStake",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
