@@ -38,8 +38,10 @@ sync_other_tx = config["sync_other_tx"]
 sync_pause = config["sync_pause"]
 chain_id = config["chain_id"]
 sync_lag = config["sync_lag"]
+sync_missed_range = config["sync_missed_range"] #this is a low effort way to sync missed tx and events, i'd not recommend to use it
+to_missed_range = config["to_missed_range"]
 
-tables_events = ['assertion_assertion_created','commit_manager_v1_commit_submitted','commit_manager_v1_u1_commit_submitted','commit_manager_v1_u1_state_finalized','content_asset_asset_burnt','content_asset_asset_minted','content_asset_asset_state_update_canceled','content_asset_asset_state_updated','content_asset_asset_storing_period_extended','content_asset_asset_update_payment_increased','content_asset_payment_increased','content_asset_storage_transfer','identity_identity_created','identity_identity_deleted','identity_storage_key_added','identity_storage_key_removed','profile_ask_updated','profile_profile_created','profile_profile_deleted','proof_manager_v1_proof_submitted','proof_manager_v1_u1_proof_submitted','service_agreement_v1_commit_submitted','service_agreement_v1_proof_submitted','service_agreement_v1_service_agreement_v1_created','service_agreement_v1_service_agreement_v1_extended','service_agreement_v1_service_agreement_v1_reward_raised','service_agreement_v1_service_agreement_v1_terminated','service_agreement_v1_service_agreement_v1_update_reward_raised','sharding_table_node_added','sharding_table_node_removed','staking_accumulated_operator_fee_increased','staking_accumulated_operator_fee_updated','staking_reward_added','staking_stake_increased','staking_stake_withdrawal_started','staking_stake_withdrawn','token_approval','token_transfer','hub_asset_storage_changed','hub_contract_changed','hub_new_asset_storage','hub_new_contract','staking_operator_fee_change_finished','staking_operator_fee_change_started','staking_reward_collected','staking_shares_burned','staking_shares_minted','profile_accumulated_operator_fee_restaked','profile_accumulated_operator_fee_withdrawal_started','profile_accumulated_operator_fee_withdrawn','paranet_knowledge_asset_submitted_to_paranet','paranet_paranet_metadata_updated','paranet_paranet_registered','paranet_paranet_service_added','paranet_paranet_service_registered','paranet_paranet_service_metadata_updated']
+tables_events = ['assertion_assertion_created','commit_manager_v1_commit_submitted','commit_manager_v1_u1_commit_submitted','commit_manager_v1_u1_state_finalized','content_asset_asset_burnt','content_asset_asset_minted','content_asset_asset_state_update_canceled','content_asset_asset_state_updated','content_asset_asset_storing_period_extended','content_asset_asset_update_payment_increased','content_asset_payment_increased','content_asset_storage_transfer','identity_identity_created','identity_identity_deleted','identity_storage_key_added','identity_storage_key_removed','profile_ask_updated','profile_profile_created','profile_profile_deleted','proof_manager_v1_proof_submitted','proof_manager_v1_u1_proof_submitted','service_agreement_v1_commit_submitted','service_agreement_v1_proof_submitted','service_agreement_v1_service_agreement_v1_created','service_agreement_v1_service_agreement_v1_extended','service_agreement_v1_service_agreement_v1_reward_raised','service_agreement_v1_service_agreement_v1_terminated','service_agreement_v1_service_agreement_v1_update_reward_raised','sharding_table_node_added','sharding_table_node_removed','staking_accumulated_operator_fee_increased','staking_accumulated_operator_fee_updated','staking_reward_added','staking_stake_increased','staking_stake_withdrawal_started','staking_stake_withdrawn','token_approval','token_transfer','hub_asset_storage_changed','hub_contract_changed','hub_new_asset_storage','hub_new_contract','staking_operator_fee_change_finished','staking_operator_fee_change_started','staking_reward_collected','staking_shares_burned','staking_shares_minted','profile_accumulated_operator_fee_restaked','profile_accumulated_operator_fee_withdrawal_started','profile_accumulated_operator_fee_withdrawn','paranet_knowledge_asset_submitted_to_paranet','paranet_paranet_metadata_updated','paranet_paranet_registered','paranet_paranet_service_added','paranet_paranet_service_registered','paranet_paranet_service_metadata_updated','staking_stake_withdrawal_canceled']
 tables_txs = ['assertion_tx','commit_manager_v1_tx','commit_manager_v1_u1_tx','content_asset_storage_tx','content_asset_tx','hub_tx','identity_storage_tx','identity_tx','other_tx','profile_tx','proof_manager_v1_tx','proof_manager_v1_u1_tx','service_agreement_v1_tx','sharding_table_tx','staking_tx','token_tx','paranet_tx']#,'profile_storage_tx']
 
 
@@ -232,7 +234,6 @@ def db_write_dict(dict1, table_name,arg_prefix=''):
         
     #pre-processing
     if table_name in tables_events: #changes applicable to all events table
-        #if table_name not in ['hub_asset_storage_changed','hub_contract_changed','hub_new_asset_storage','hub_new_contract']:
         dict1['contract_id']=contracts[dict1['address']].get('id')
         del dict1['address']
         del dict1['event']
@@ -329,15 +330,23 @@ def db_write_dicts(dicts, table_name):
 
 def db_update_latest_synced_block(end_block):
     print(" Last synced block - " + str(end_block) + " | RPC calls - " + str(rpc_calls))
-    q = "update sync_status set block_num = %s where parameter='last_synced_block'"
+    if sync_missed_range == True:
+        q = "update sync_status set block_num = %s where parameter='missed_contract_last_synced_block'"
+    else:
+        q = "update sync_status set block_num = %s where parameter='last_synced_block'"
     v = (end_block,)
     db_run_tx(q, v)
 
 
-def db_fetch_last_sycned_block():
+def db_fetch_last_synced_block():
     q = "select block_num from sync_status where parameter='last_synced_block'"
     c.execute(q)
     res = c.fetchone()
+    
+    if sync_missed_range == True:
+        q = "select block_num from sync_status where parameter='missed_contract_last_synced_block'"
+        c.execute(q)
+        res = c.fetchone()
 
     if res == None:
         q = "insert into sync_status (parameter) values ('last_synced_block')"
@@ -474,8 +483,10 @@ def load_abis(abi_v):
 def define_blocks_to_sync():
     status, latest_block = rpc_call('w3.eth.block_number')
     latest_block = latest_block - sync_lag
+    if sync_missed_range == True:
+        latest_block = to_missed_range
     if status == 'pass':
-        start_block = db_fetch_last_sycned_block()
+        start_block = db_fetch_last_synced_block()
         if start_block < latest_block:
             if latest_block - start_block < sync_window: #if i don't have full window of blocks available to sync i need to reduce it
                 cur_window = latest_block - start_block
@@ -553,7 +564,7 @@ def format_and_write_txs(txs):
     errors = 0
     for index, item in enumerate(txs):
         if txs[index]['to'] in contracts.keys(): 
-            if chain_id != 100 or (chain_id == 100 and txs[index]['input'][:10]!='0x4000aea0'): #this is for Gnosis chain, my ABI does not have info for transferAndCall function, so i exclude it with this IF
+            if chain_id != 100 or (chain_id == 100 and txs[index]['input'].hex()[:10]!='0x4000aea0'): #this is for Gnosis chain, my ABI does not have info for transferAndCall function, so i exclude it with this IF
                 cur_contract_name = contracts[txs[index]['to']]['name']
                 a = w3.eth.contract(address=txs[index]['to'],abi=abis[cur_contract_name])    
                 try:
@@ -574,9 +585,8 @@ def format_and_write_txs(txs):
                         cur_func_name = 'createAsset'
                     for key,val in func[1].items():
                         txs[index][cur_func_name+key[0].upper() + key[1:]] = val
-                    #txs[index] = flatten_args(item, cur_func_name)
-                #errors += db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
-                #db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
+
+                
                 try:
                     errors += db_write_dict(txs[index],table_name,arg_prefix=cur_func_name)
                 except Exception as e:
@@ -645,6 +655,7 @@ while True:
     #Hub events
     tick_cycle = datetime.now()
     start_block, end_block, cur_window, abi_v = define_blocks_to_sync()
+        
     abis = load_abis(abi_v)
     if abi_v == 'v1':
         contract_events = contract_events_v1
@@ -657,11 +668,12 @@ while True:
         contract_functions = contract_functions_v3
     
     if cur_window > 0:
-        tick = datetime.now()
-        print("Delete data above block "+ str(start_block)+'...', end='', flush=True )
-        db_clean_partial_records(start_block)
-        tock = datetime.now()
-        print(str((tock - tick).seconds) + 's. ', end='', flush=True)
+        if sync_missed_range == False:
+            tick = datetime.now()
+            print("Delete data above block "+ str(start_block)+'...', end='', flush=True )
+            db_clean_partial_records(start_block)
+            tock = datetime.now()
+            print(str((tock - tick).seconds) + 's. ', end='', flush=True)
         
         print("Syncing blocks " + str(start_block) + " to " + str(end_block) + ". Batch - " + str(cur_window))
         #fetching blocks and txs
@@ -674,16 +686,18 @@ while True:
         print(str((tock - tick).seconds) + 's')
         
         #fetching and writing Hub events, also updating contracts table
-        tick = datetime.now()
-        contracts = db_fetch_contracts(start_block,cur_window) #only for Hub contact ID really
-        sync_events('Hub',hub_addr, start_block, end_block, abi_v)
-        q = "call sp_update_contracts();"
-        v = None
-        db_run_tx(q,v)
-        tock = datetime.now()
-        print("\tHub events - "+str((tock - tick).seconds) + 's')
+        if sync_missed_range == False:
+            tick = datetime.now()
+            contracts = db_fetch_contracts(start_block,cur_window) #only for Hub contact ID really
+            sync_events('Hub',hub_addr, start_block, end_block, abi_v)
+            q = "call sp_update_contracts();"
+            v = None
+            db_run_tx(q,v)
+            tock = datetime.now()
+            print("\tHub events - "+str((tock - tick).seconds) + 's')
         contracts = db_fetch_contracts(start_block,cur_window) #fetch fresh list in case we had Hub events    
         
+                    
         #fetching and writing all other events
         tick = datetime.now()
         for key, value in contracts.items():
@@ -693,7 +707,8 @@ while True:
         print("\tOther events - "+str((tock - tick).seconds) + 's')
         
         #writing blocks and txs
-        db_w_err += db_write_dicts(blocks, 'block')
+        if sync_missed_range == False:
+            db_w_err += db_write_dicts(blocks, 'block')
         if len(txs)>0:
             db_w_err += format_and_write_txs(txs)
     
@@ -710,7 +725,13 @@ while True:
     #i+=1
     if cur_window < sync_window: #full sync is done
         print('\tSleep '+str(sync_pause)+'s...')    
-        sleep(sync_pause)
+        dreams = sync_pause // 10
+        j = 0
+        while j < dreams:
+            sleep(10)
+            j = j + 1
+        
+        #sleep(sync_pause)
     print('----------------------------------------------------------')
 
 db_close_connection(conn,c)
